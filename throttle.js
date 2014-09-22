@@ -89,25 +89,16 @@ Throttle.prototype._passthroughChunk = function () {
 
 Throttle.prototype._onchunk = function (output, done) {
   var self = this;
-  var totalSeconds = (Date.now() - this.startTime) / 1000;
-  var expected = totalSeconds * this.bps;
 
   function d () {
+    var totalSeconds = (Date.now() - self.startTime) / 1000;
+    var expected = totalSeconds * self.bps;
+
+    if (self.totalBytes > expected)
+      return setImmediate(d);
+
     self._passthroughChunk();
     done();
   }
-
-  if (this.totalBytes > expected) {
-    // Use this byte count to calculate how many seconds ahead we are.
-    var remainder = this.totalBytes - expected;
-    var sleepTime = remainder / this.bps * 1000;
-    //console.error('sleep time: %d', sleepTime);
-    if (sleepTime > 0) {
-      setTimeout(d, sleepTime);
-    } else {
-      d();
-    }
-  } else {
-    d();
-  }
+  d();
 };
